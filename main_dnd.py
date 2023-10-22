@@ -154,6 +154,21 @@ def train_model(model, train_loader, val_loader, test_loader, start_epoch, cfg):
             print("Exiting training early", flush=True)
             break
 
+from prettytable import PrettyTable
+
+def count_parameters(model):
+    table = PrettyTable(["Modules", "Parameters"])
+    total_params = 0
+    for name, parameter in model.named_parameters():
+        if not parameter.requires_grad:
+            continue
+        params = parameter.numel()
+        table.add_row([name, params])
+        total_params += params
+    print(table)
+    print(f"Total Trainable Params: {total_params}")
+    return total_params
+
 if __name__ == '__main__':
     # init
     args = get_arguments()
@@ -180,11 +195,16 @@ if __name__ == '__main__':
     cfg.num_classes = len(test_dataset.class_to_ind)
     model = MyModel(cfg)
     # print(print_para(model), flush=True)
+    count_parameters(model)
+    #pytorch_total_params = sum(p.numel() for p in model.parameters())
+    #pytorch_total_train_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    #print(pytorch_total_params, pytorch_total_train_params)
 
     # load model
     model = torch.nn.DataParallel(model) # , device_ids=[0, 1]
     model, start_epoch = load_model(cfg, model)
     model.to(device)
+    print_para(model)
 
     if not args.is_test:
         train_model(model, train_loader, val_loader, test_loader, start_epoch, cfg)
