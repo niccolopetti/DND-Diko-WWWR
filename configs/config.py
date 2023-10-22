@@ -11,7 +11,7 @@ import argparse
 
 
 project_root = Path(__file__).resolve().parents[1]
-data_root = '/home/yij/remote_home/datasets/phenorob_cp2/Challenge/DND-Diko-WWWR' # path to dataset
+data_root = '/media/niccolo/DATA/DND-Diko-WWWR/Challenge/DND-Diko-WWWR' # path to dataset
 
 cfg = EasyDict()
 
