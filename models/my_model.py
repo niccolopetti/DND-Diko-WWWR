@@ -4,22 +4,21 @@ Example model.
 Author: Jinhui Yi
 Date: 2023.06.01
 """
-import torch
 import torch.nn as nn
-import torchvision.models as models
+#from models.mobilevit import mobilevit_xxs
+import timm
 
 class MyModel(nn.Module):
     def __init__(self, cfg):
         super(MyModel, self).__init__()
         self.num_classes = cfg.num_classes
-        # self.model_name = 'resnet50'
-        self.model_name = 'swin_v2_s'
-        assert self.model_name in models.list_models()
+        #self.model = mobilevit_xxs()
+        self.model = timm.create_model('mobilevit_s.cvnets_in1k',  img_size=1100, num_classes=self.num_classes, pretrained=True)
+        #self.model.head.fc = nn.Linear(self.model.head.fc.in_features, self.num_classes)
         
-        print("Loading pretrained: ", self.model_name)
-        self.model = getattr(models, self.model_name)(weights='DEFAULT')
-        # self.model.fc = nn.Linear(self.model.fc.in_features, self.num_classes) # replace the final FC layer (ResNet50)
-        self.model.head = nn.Linear(self.model.head.in_features, self.num_classes) # replace the final FC layer (swin_v2_s)
-
+        for name, param in self.model.named_parameters():
+            if 'head.fc' not in name:  # Adjusted based on the given structure
+                param.requires_grad = False
+            
     def forward(self, x):
         return self.model(x)
