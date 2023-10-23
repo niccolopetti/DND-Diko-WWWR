@@ -14,65 +14,7 @@ def set_seed(seed):
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
     random.seed(seed)
-
     torch.backends.cudnn.deterministic = True
-
-
-def top_k_accuracy(output, target, topk=(1,)):
-    """Computes the accuracy over the k top predictions for the specified values of k
-
-    [top_a, top_b, top_c, ...], each element is an accuracy over a batch. 
-    
-    output: (B, n_cls)
-    target: (n_cls)
-    """
-    with torch.no_grad():
-        maxk = max(topk)
-        batch_size = target.size(0)
-
-        _, pred = output.topk(maxk, 1, True, True)  # (B, maxk), (B, maxk)
-        pred = pred.t()
-        correct = pred.eq(target.view(1, -1).expand_as(pred))   # (maxk, B)
-
-        res = []
-        for k in topk:
-            correct_k = correct[:k].contiguous().view(-1).float().sum(0, keepdim=True)
-            res.append(correct_k.mul_(1.0 / batch_size))    # 100.0 -> %
-        return res
-
-
-# Source: adapt from https://github.com/rowanz/neural-motifs/blob/master/lib/pytorch_misc.py
-def print_para(model, is_sorted=True):
-    """
-    Prints parameters of a model
-    For example:
-        555.6M total parameters
-        -----
-        detector.roi_fmap.0.weight                        : [4096,25088]    (102760448) (    )
-        union_vgg.1.0.weight                              : [4096,25088]    (102760448) (grad)
-        roi_fmap.1.0.weight                               : 7[4096,25088]    (102760448) (grad)
-        roi_fmap_obj.0.weight                             : [4096,25088]    (102760448) (grad)
-        detector.roi_fmap.3.weight                        : [4096,4096]     (16777216) (    )
-    """
-    st = {}
-    strings = []
-    total_params = 0
-    for p_name, p in model.named_parameters():
-
-        if not ('bias' in p_name.split('.')[-1] or 'bn' in p_name.split('.')[-1]):
-            st[p_name] = ([str(x) for x in p.size()], np.prod(p.size()), p.requires_grad)
-        total_params += np.prod(p.size())
-    if is_sorted:
-        st_sorted = sorted(st.items(), key=lambda x: -x[1][1])
-    else:
-        st_sorted = st.items()
-    for p_name, (size, prod, p_req_grad) in st_sorted:
-        strings.append("{:<50s}: {:<16s}({:8d}) ({})".format(
-            p_name, '[{}]'.format(','.join(size)), prod, 'grad' if p_req_grad else '    '
-        ))
-
-    return '\n {:.1f}M total parameters \n ----- \n \n{}'.format(total_params / 1000000.0, '\n'.join(strings))
-
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""

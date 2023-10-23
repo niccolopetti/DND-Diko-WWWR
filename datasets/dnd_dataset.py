@@ -15,7 +15,7 @@ from datasets.get_metadata import get_metadata
 
 # Deep Nutrient Deficiency dataset
 class DND(Dataset):
-    def __init__(self, cfg, split='train'):
+    def __init__(self, cfg, split='train',transforms=None):
         super(DND, self).__init__()
 
         if split not in ('trainval', 'train', 'val', 'test'):
@@ -28,28 +28,14 @@ class DND(Dataset):
 
         # use cache for acceleration
         self.cache_path = os.path.join(project_root, 'datasets/cache', cfg.CROPTYPE, str(self.cfg.im_scale))
-        print("Cache path: ".ljust(20), self.cache_path)
         if not os.path.exists(self.cache_path):
             os.makedirs(self.cache_path)
-
-        # data augmentation
-        if split.startswith('train'):
-            tform = [
-                # RandomRotation(180),
-                RandomHorizontalFlip(),
-                # RandomPerspective(), 
-                ToTensor(),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),]
-        else: 
-            tform = [
-                ToTensor(),
-                Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),]
-
-        self.tform_pipeline = Compose(tform)
+        self.tform_pipeline = transforms
 
     def __getitem__(self, index):
         img_name = self.img_paths[index].split('/')[-1]
-        assert os.path.isfile(self.img_paths[index]), self.img_paths[index] + " does not exit!"
+        if not os.path.isfile(self.img_paths[index]):
+            raise FileNotFoundError(f"{self.img_paths[index]} does not exist!")
 
         # use cache cuz loading and resizing the original image (high resolution) is time-consuming
         cache_file = os.path.join(self.cache_path,  img_name[:-3] + 'pkl')
