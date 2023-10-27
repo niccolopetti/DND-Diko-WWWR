@@ -9,13 +9,6 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau, CosineAnnealingLR, Cosin
 from torch import optim
 import os
 
-def set_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    torch.backends.cudnn.deterministic = True
-
 class AverageMeter(object):
     """Computes and stores the average and current value"""
     def __init__(self):
@@ -131,30 +124,6 @@ def save_best_model(epoch, model, optimizer, suffix=''):
     }, save_path)
     print("Epo {:3}: Saving best ckpt to {}".format(epoch, save_path))
     return save_path
-
-
-# Srouce: https://github.com/YanchaoYang/FDA/blob/master/utils/timer.py
-class Timer(object):
-    """A simple timer."""
-    def __init__(self):
-        self.total_time = 0.
-        self.calls = 0
-        self.start_time = 0.
-        self.diff = 0.
-        self.average_time = 0.
-
-    def tic(self):
-        self.start_time = time.time()
-
-    def toc(self, average=True):
-        self.diff = time.time() - self.start_time
-        self.total_time += self.diff
-        self.calls += 1
-        self.average_time = self.total_time / self.calls
-        if average:
-            return self.average_time
-        else:
-            return self.diff
 
 if __name__ == "__main__":
     pass
