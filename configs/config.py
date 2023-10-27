@@ -16,12 +16,6 @@ cfg.NWORK = 4
 
 # TRAIN CONFIGS
 cfg.TRAIN = EasyDict()
-cfg.TRAIN.OPTIM = 'sgd'
-cfg.TRAIN.LR = 1e-3
-cfg.TRAIN.MOMENTUM = 0.9
-cfg.TRAIN.WEIGHT_DECAY = 1e-2
-cfg.TRAIN.POWER = 0.9
-cfg.TRAIN.MAX_EPOCH = 5
 # TEST CONFIGS
 cfg.TEST = EasyDict()
 
