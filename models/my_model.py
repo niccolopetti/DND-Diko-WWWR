@@ -18,8 +18,9 @@ class MyModel(L.LightningModule):
         super(MyModel, self).__init__()
         self.num_classes = cfg.num_classes
         self.bsz=cfg.bsz
+        self.cfg=cfg
         #self.model = mobilevit_xxs()
-        self.model = timm.create_model('mobilevit_s.cvnets_in1k', num_classes=self.num_classes, pretrained=True)
+        self.model = timm.create_model('mobilevit_s.cvnets_in1k', num_classes=self.num_classes, pretrained=True, img_size=cfg.im_scale)
         #self.model.head.fc = nn.Linear(self.model.head.fc.in_features, self.num_classes)
         
         for name, param in self.model.named_parameters():
@@ -43,7 +44,8 @@ class MyModel(L.LightningModule):
 
     # Added the optimizer
     def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(self.parameters(), lr=2e-5, weight_decay=1e-2)
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.cfg.TRAIN.LR, weight_decay=self.cfg.TRAIN.WEIGHT_DECAY)
+        """
         def lr_foo(epoch):
             if epoch < self.hparams.warm_up_step:
                 # warm up lr
@@ -56,10 +58,9 @@ class MyModel(L.LightningModule):
         scheduler = LambdaLR(
             optimizer,
             lr_lambda=lr_foo
-        )
-
-        return [optimizer], [scheduler]
-        #return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "val_accuracy"}
+        )"""
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=5)
+        return {"optimizer": optimizer, "lr_scheduler": scheduler, "monitor": "accuracy/val"}
     
     def _shared_step(self, batch, prefix):
         img = batch['img']
@@ -76,19 +77,17 @@ class MyModel(L.LightningModule):
         recall = recall_metric(preds, labels)
         f1 = f1_metric(preds, labels)
         accuracy = accuracy_metric(preds, labels)
+        loss = F.cross_entropy(scores, labels)
 
         metrics = {
             'precision': precision,
             'recall': recall,
             'f1': f1,
-            'accuracy': accuracy
+            'accuracy': accuracy,
+            'loss': loss
         }
         self.log_metrics(prefix, metrics)
-
-        loss = F.cross_entropy(scores, labels)
-        self.log(f"{prefix}_loss", loss, on_epoch=True, prog_bar=True, logger=True)
-
-        return loss
+        return metrics
 
     def training_step(self, batch, batch_idx):
         return self._shared_step(batch, "train")
@@ -99,8 +98,8 @@ class MyModel(L.LightningModule):
     def log_metrics(self, prefix, metrics):
         for name, metric in metrics.items():
             if len(metric.shape) == 0:  # if metric is a single value
-                self.log(f"{prefix}_{name}", metric, on_epoch=True, prog_bar=True, logger=True)
+                self.log(f"{name}/{prefix}", metric,on_step=True, on_epoch=True, prog_bar=True, logger=True)
             else:  # if metric is a tensor (e.g., per-class values)
                 for idx, val in enumerate(metric):
-                    self.log(f"{prefix}_{name}_class_{idx}", val, on_epoch=True, prog_bar=True, logger=True)
+                    self.log(f"{name}_class_{idx}/{prefix}", val,on_step=True, on_epoch=True, prog_bar=True, logger=True)
     
